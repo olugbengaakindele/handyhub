@@ -142,3 +142,5 @@ MEDIA_ROOT  = os.path.join(BASE_DIR, 'pictures')
 
 MEDIA_URL = '/profile_picture/'
 
+LOGIN_REDIRECT_URL = "users:index"
+LOGIN_URL = "users:login"
