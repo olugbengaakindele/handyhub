@@ -3,5 +3,8 @@ from django.http import HttpResponse as hp
 
 
 def index(request):
+    return render(request, "users/base.html")
 
-    return hp("This is my first app")
+def register(request):
+
+    return render(request, "users/register.html")

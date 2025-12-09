@@ -8,9 +8,6 @@ User = get_user_model()
 
 #  this registers a user to the user modesl. This is thes basic reg needed to create a profile.
 
-
-
-
 class UserRegisterForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
@@ -36,11 +33,6 @@ class UserRegisterForm(UserCreationForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("A user with this email already exists.")
         return email
-
-
-
-
-
 
 
 
