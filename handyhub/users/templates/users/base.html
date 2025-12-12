@@ -38,10 +38,12 @@
                     <div id="userDropdown"
                         class="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-md border border-gray-200 hidden">
                         
-                        <a href="#" class="block px-4 py-2 hover:bg-gray-100">Account</a>
+                        <a href="{% url 'users:profile' user.id  %}" class="block px-4 py-2 hover:bg-gray-100">Account</a>
                         <a href="#" class="block px-4 py-2 hover:bg-gray-100">Help & FAQs</a>
                         <a href="#" class="block px-4 py-2 hover:bg-gray-100">Support</a>
-
+                        {% if user.is_staff %} 
+                            <a href="{% url 'services:addcategory' %}" class="block px-4 py-2 hover:bg-gray-100">Admin</a>
+                        {% endif %}
                         <a href="{% url 'users:logout' %}" 
                             class="block px-4 py-2 text-red-600 hover:bg-gray-100">
                             Logout

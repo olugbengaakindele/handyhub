@@ -2,11 +2,11 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import UserProfile 
+import re
+
+
 User = get_user_model()
 
-
-
-#  this registers a user to the user modesl. This is thes basic reg needed to create a profile.
 
 class UserRegisterForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -27,13 +27,35 @@ class UserRegisterForm(UserCreationForm):
             "password2": forms.PasswordInput(attrs={"class": "form-control"}),
         }
 
-    # Make sure email is unique
+    # Validate unique email
     def clean_email(self):
         email = self.cleaned_data.get("email")
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("A user with this email already exists.")
         return email
 
+    # THE CORRECT PLACE FOR PASSWORD VALIDATION
+    def clean_password2(self):
+        pw1 = self.cleaned_data.get("password1")
+        pw2 = self.cleaned_data.get("password2")
+
+        # First ensure Django still checks matching
+        if pw1 and pw2 and pw1 != pw2:
+            raise forms.ValidationError("Passwords do not match.")
+
+        # Length rule
+        if len(pw1) < 8:
+            raise forms.ValidationError("Password must be at least 8 characters long.")
+
+        # At least 1 letter
+        if not re.search(r"[A-Za-z]", pw1):
+            raise forms.ValidationError("Password must contain at least one letter.")
+
+        # At least 1 number
+        if not re.search(r"[0-9]", pw1):
+            raise forms.ValidationError("Password must contain at least one number.")
+
+        return pw2
 
 
 
