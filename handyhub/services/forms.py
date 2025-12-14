@@ -1,8 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-import re
-from django import forms
 from .models import ServiceCategory
 
 User = get_user_model()
@@ -21,3 +19,16 @@ class ServiceCategoryForm(forms.ModelForm):
                 "placeholder": "Enter category name"
             })
         }
+    
+from .models import SubCategory, ServiceCategory
+
+class SubCategoryForm(forms.ModelForm):
+    category = forms.ModelChoiceField(
+        queryset=ServiceCategory.objects.all(),
+        empty_label="Select a category",
+        label="Category"
+    )
+
+    class Meta:
+        model = SubCategory
+        fields = ['category', 'name']

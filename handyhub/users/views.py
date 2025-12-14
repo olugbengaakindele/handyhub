@@ -3,11 +3,13 @@ from django.http import HttpResponse as hp
 from .forms import *
 from django.contrib import messages
 from django.contrib.auth import logout
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
+from services.models import SubCategory, ServiceCategory
+from .models import UserService, UserProfile
 
-
+User = get_user_model()
 
 def index(request):
     return render(request, "users/base.html")
@@ -35,13 +37,21 @@ def register(request):
 def profile(request, userid):
 
     user = get_object_or_404(User, id=userid)
+    # Get user profile (OneToOne)
+    profile = getattr(user, "profile", None)
 
-    # If you created a UserProfile model
-    profile_user = getattr(user, "profile", None)
+    # Get services rendered by the user
+    user_services = (
+        UserService.objects
+        .select_related("category", "subcategory")
+        .filter(user=user)
+    )
 
     context = {
-        "user_obj": user,
-        "profile_user": profile_user,
+        "user_obj": user,          # optional, but useful
+        "profile": profile,
+        "user_services": user_services,
+        "user_has_services": user_services.exists(),
     }
 
     return render(request, "users/profile.html", context)
@@ -51,3 +61,70 @@ def logmeout(request):
     logout(request)
     messages.success(request,f"You have been logout of of this app")
     return redirect("users:index")
+
+
+# @login_required
+# def add_user_services(request):
+#     categories = ServiceCategory.objects.prefetch_related("subcategories")
+
+#     if request.method == "POST":
+#         category_id = request.POST.get("category")
+#         selected_services = request.POST.getlist("services")
+
+#         category = ServiceCategory.objects.get(id=category_id)
+
+#         for sub_id in selected_services:
+#             UserService.objects.get_or_create(
+#                 user=request.user,
+#                 category=category,
+#                 subcategory_id=sub_id
+#             )
+
+#         return redirect("users:index")
+
+#     return render(request, "users/userservices.html", {
+#         "categories": categories
+#     })
+
+
+
+@login_required
+def add_user_services(request, userid):
+    user = get_object_or_404(User, id=userid)
+    user_services = (
+        UserService.objects
+        .select_related("category", "subcategory")
+        .filter(user=user)
+    )
+
+    categories = ServiceCategory.objects.prefetch_related("subcategories")
+
+    if request.method == "POST":
+        category_id = request.POST.get("category")
+        selected_services = request.POST.getlist("services")
+
+
+    # Security: user can only edit their own services (unless staff)
+    if request.user != user and not request.user.is_staff:
+        messages.error(request, "You are not authorized to access this page.")
+        return redirect("users:profile", userid=request.user.id)
+
+    if request.method == "POST":
+        form = UserServiceForm(request.POST)
+        if form.is_valid():
+            service = form.save(commit=False)
+            service.user = user
+            service.save()
+            messages.success(request, "Service added successfully.")
+            return redirect("users:profile", userid=user.id)
+    else:
+        form = UserServiceForm()
+
+    context = {
+        "form": form,
+        "user_obj": user,
+        "user_services": user_services,
+        "categories": categories
+    }
+
+    return render(request, "users/userservices.html", context)

@@ -5,13 +5,147 @@
 
 {% block body %}
 <!-- Outer Container -->
- 
-  <div class="min-h-screen bg-gray-100 flex items-center justify-center px-6">
-    <div class="w-full max-w-xl bg-white shadow-xl rounded-2xl p-10">
-       <h4>This is my profile page</h4> 
-       
+  <div class="min-h-screen bg-gray-100 py-10">
+    <div class="max-w-7xl mx-auto px-4">
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+            <!-- SIDEBAR -->
+            <aside class="bg-white rounded-xl shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    Account Settings
+                </h3>
+
+                <ul class="space-y-3 text-sm">
+                    <li>
+                        <a href=""
+                           class="block text-blue-600 hover:underline">
+                            ✏️ Edit Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a href=""
+                           class="block text-blue-600 hover:underline">
+                            🖼️ Edit Profile Picture
+                        </a>
+                    </li>
+                    <li>
+                        <a href=""
+                           class="block text-blue-600 hover:underline">
+                            📍 Edit Address
+                        </a>
+                    </li>
+                    <li>
+                        
+                        <a href="{% url 'users:userservice' user.id  %}"
+                           class="block text-blue-600 hover:underline">
+                          {% if user_has_services %} 
+                            🛠️ Edit Services
+                          {% else %}
+                            🛠️ Add Services
+
+                          {% endif %}
+                        </a>
+                    </li>
+                </ul>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="md:col-span-3 space-y-6">
+
+                <!-- PROFILE CARD -->
+                <section class="bg-white rounded-xl shadow p-6">
+                    <div class="flex items-center space-x-6">
+
+                        <!-- Profile Image -->
+                        <div class="flex-shrink-0">
+                            {% if profile.user_profile_image %}
+                                <img src="{{ profile.user_profile_image.url }}"
+                                     class="w-24 h-24 rounded-full object-cover border">
+                            {% else %}
+                                <div class="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
+                                    No Image
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Basic Info -->
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">
+                                {{ user.first_name }}
+                                {{ user.last_name }}
+                            </h2>
+
+                            {% if profile.user_business_name %}
+                                <p class="text-gray-600 font-medium">
+                                    {{ profile.user_business_name }}
+                                </p>
+                            {% endif %}
+
+                            {% if profile.user_website %}
+                                <a href=""
+                                   target="_blank"
+                                   class="text-blue-600 text-sm hover:underline">
+                                    {{ profile.user_website }}
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ADDRESS CARD -->
+                <section class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        Address
+                    </h3>
+
+                    <p class="text-gray-700">
+                        {{ profile.user_address_line1 }}<br>
+                        {% if profile.user_address_line2 %}
+                            {{ profile.user_address_line2 }}<br>
+                        {% endif %}
+                        {{ profile.user_city }},
+                        {{ profile.user_province }}<br>
+                        {{ profile.user_postal_code }}
+                    </p>
+                </section>
+
+                <!-- SERVICES OFFERED -->
+                <section class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        Services Offered
+                    </h3>
+
+                    {% regroup user_services by category as grouped_services %}
+
+                    {% if grouped_services %}
+                        <div class="space-y-4">
+                            {% for group in grouped_services %}
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mb-2">
+                                        {{ group.grouper.name }}
+                                    </h4>
+
+                                    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {% for service in group.list %}
+                                            <li class="bg-gray-100 rounded-lg px-4 py-2 text-sm text-gray-700">
+                                                ✔ {{ service.subcategory.name }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500">
+                            No services added yet.
+                        </p>
+                    {% endif %}
+                </section>
+
+            </main>
+        </div>
     </div>
-</div>
-
-
+  </div>
 {% endblock %}
+

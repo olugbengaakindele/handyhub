@@ -4,11 +4,15 @@ from .forms import *
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404
 
+# Decorator to allow only staff users
+def staff_required(user):
+    return user.is_staff
 
 @login_required
+@user_passes_test(staff_required)
 def add_service_category(request):
     if request.method == "POST":
         form = ServiceCategoryForm(request.POST)
@@ -21,3 +25,18 @@ def add_service_category(request):
         form = ServiceCategoryForm()
 
     return render(request, "services/add_service_category.html", {"form": form})
+
+
+
+@login_required
+@user_passes_test(staff_required)
+def add_subcategory(request):
+    if request.method == "POST":
+        form = SubCategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("users:index")
+    else:
+        form = SubCategoryForm()
+    
+    return render(request, 'services/add_subcategory.html', {'form': form})

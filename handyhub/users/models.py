@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from services.models import SubCategory, ServiceCategory
 
 User = get_user_model()
 
@@ -47,3 +48,18 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user_firstname})"
+    
+
+
+class UserService(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name = "services")
+    category = models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
+    subcategory = models.ForeignKey(SubCategory, on_delete=models.CASCADE)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "subcategory")  # prevents duplicates
+
+    def __str__(self):
+        return f"{self.user} - {self.subcategory.name}"

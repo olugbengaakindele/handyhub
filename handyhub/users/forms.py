@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-from .models import UserProfile 
+from .models import UserProfile , UserService
 import re
 
 
@@ -105,3 +105,48 @@ class UserProfileForm(forms.ModelForm):
             "user_postal_code": forms.TextInput(attrs={"class": "form-control"}),
             "user_website": forms.URLInput(attrs={"class": "form-control"}),
         }
+
+
+
+class UserServiceForm(forms.ModelForm):
+
+    class Meta:
+        model = UserService
+        fields = [
+            "category",
+            "subcategory",
+        ]
+
+        widgets = {
+            "category": forms.Select(
+                attrs={
+                    "class": (
+                        "w-full p-3 border border-gray-300 rounded-lg "
+                        "focus:outline-none focus:ring-2 focus:ring-blue-500 "
+                        "bg-white"
+                    )
+                }
+            ),
+            "subcategory": forms.Select(
+                attrs={
+                    "class": (
+                        "w-full p-3 border border-gray-300 rounded-lg "
+                        "focus:outline-none focus:ring-2 focus:ring-blue-500 "
+                        "bg-white"
+                    )
+                }
+            ),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        category = cleaned_data.get("category")
+        subcategory = cleaned_data.get("subcategory")
+
+        if category and subcategory:
+            if subcategory.category != category:
+                raise forms.ValidationError(
+                    "Selected subcategory does not belong to the selected category."
+                )
+
+        return cleaned_data
