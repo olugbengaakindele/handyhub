@@ -12,7 +12,9 @@ from .models import UserService, UserProfile
 User = get_user_model()
 
 def index(request):
-    return render(request, "users/base.html")
+    return render(request, "users/index.html")
+
+
 
 def register(request):
     form = UserRegisterForm(request.POST or None)
@@ -103,20 +105,16 @@ def add_user_services(request, userid):
         category_id = request.POST.get("category")
         selected_services = request.POST.getlist("services")
 
+        category = ServiceCategory.objects.get(id=category_id)
 
-    # Security: user can only edit their own services (unless staff)
-    if request.user != user and not request.user.is_staff:
-        messages.error(request, "You are not authorized to access this page.")
-        return redirect("users:profile", userid=request.user.id)
+        for sub_id in selected_services:
+            UserService.objects.get_or_create(
+                user=request.user,
+                category=category,
+                subcategory_id=sub_id
+            )
 
-    if request.method == "POST":
-        form = UserServiceForm(request.POST)
-        if form.is_valid():
-            service = form.save(commit=False)
-            service.user = user
-            service.save()
-            messages.success(request, "Service added successfully.")
-            return redirect("users:profile", userid=user.id)
+        return redirect("users:index")
     else:
         form = UserServiceForm()
 
