@@ -126,3 +126,20 @@ def add_user_services(request, userid):
     }
 
     return render(request, "users/userservices.html", context)
+
+
+@login_required
+def edit_profile(request):
+    profile = request.user.profile  # guaranteed by signal
+
+    if request.method == "POST":
+        form = EditProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect("users:profile", request.user.id)
+    else:
+        form = EditProfileForm(instance=profile)
+
+    return render(request, "users/edit_profile.html", {
+        "form": form
+    })

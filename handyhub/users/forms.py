@@ -150,3 +150,30 @@ class UserServiceForm(forms.ModelForm):
                 )
 
         return cleaned_data
+    
+
+
+
+class EditProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = [
+            "user_firstname",
+            "user_last_name",
+            "user_preferred_name",
+            "user_business_name",
+        ]
+        widgets = {
+            "user_firstname": forms.TextInput(attrs={
+                "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
+            }),
+            "user_last_name": forms.TextInput(attrs={
+                "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
+            }),
+            "user_preferred_name": forms.TextInput(attrs={
+                "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
+            }),
+            "user_business_name": forms.TextInput(attrs={
+                "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
+            }),
+        }
