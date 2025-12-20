@@ -14,7 +14,11 @@ User = get_user_model()
 def index(request):
     return render(request, "users/index.html")
 
-
+def about(request):
+    """
+    Renders the About Us page for HandymenHub.
+    """
+    return render(request, "users/about.html")
 
 def register(request):
     form = UserRegisterForm(request.POST or None)
