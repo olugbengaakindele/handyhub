@@ -143,3 +143,24 @@ def edit_profile(request):
     return render(request, "users/edit_profile.html", {
         "form": form
     })
+
+
+#  this is the delete confirmation view
+
+@login_required
+def delete_user_service(request, service_id):
+    try:
+        # Try to get the service belonging to the current user
+        service = UserService.objects.get(id=service_id, user=request.user)
+    except UserService.DoesNotExist:
+        messages.error(request, "You do not have permission to delete this service.")
+        # Redirect safely to their service list
+        return redirect("users:userservice", userid=request.user.id)
+
+    if request.method == "POST":
+        service.delete()
+        messages.success(request, "Service removed successfully.")
+        return redirect("users:userservice", userid=request.user.id)
+
+    # Optional: if you want a confirmation page
+    return render(request, "users/delete_user_service.html", {"service": service})

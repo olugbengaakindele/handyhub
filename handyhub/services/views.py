@@ -6,6 +6,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
 
 # Decorator to allow only staff users
 def staff_required(user):
@@ -40,3 +41,21 @@ def add_subcategory(request):
         form = SubCategoryForm()
     
     return render(request, 'services/add_subcategory.html', {'form': form})
+
+
+
+# this is an ajax view
+@login_required
+@user_passes_test(staff_required)
+def get_subcategories_by_category(request):
+    category_id = request.GET.get("category_id")
+
+    subcategories = []
+    if category_id:
+        subcategories = list(
+            SubCategory.objects
+            .filter(category_id=category_id)
+            .values_list("name", flat=True)
+        )
+
+    return JsonResponse({"subcategories": subcategories})

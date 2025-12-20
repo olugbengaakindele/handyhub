@@ -22,13 +22,26 @@ class ServiceCategoryForm(forms.ModelForm):
     
 from .models import SubCategory, ServiceCategory
 
+
 class SubCategoryForm(forms.ModelForm):
     category = forms.ModelChoiceField(
         queryset=ServiceCategory.objects.all(),
         empty_label="Select a category",
-        label="Category"
+        label="Category",
+        widget=forms.Select(attrs={
+            "class": "w-full p-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg "
+                     "focus:ring-2 focus:ring-green-500 focus:border-green-500",
+            "id": "category-select"
+        })
     )
 
     class Meta:
         model = SubCategory
-        fields = ['category', 'name']
+        fields = ["category", "name"]
+        widgets = {
+            "name": forms.TextInput(attrs={
+                "class": "w-full p-3 bg-gray-50 text-gray-800 border border-gray-300 rounded-lg "
+                         "focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                "placeholder": "e.g. Washer Repair"
+            })
+        }
