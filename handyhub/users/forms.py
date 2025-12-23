@@ -177,3 +177,45 @@ class EditProfileForm(forms.ModelForm):
                 "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
             }),
         }
+
+
+class ProfilePictureForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ["user_profile_image"]
+        widgets = {
+            "user_profile_image": forms.ClearableFileInput(
+                attrs={
+                    "class": "hidden",
+                    "accept": "image/*",
+                    "id": "id_profile_image",
+                }
+            )
+        }
+
+
+class EditContactAddressForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = [
+            'user_primary_phone',
+            'user_secondary_phone',
+            'user_business_phone',
+            'user_website',
+            'user_address_line1',
+            'user_address_line2',
+            'user_city',
+            'user_province',
+            'user_postal_code'
+        ]
+        widgets = {
+            'user_primary_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_secondary_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_business_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_website': forms.URLInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_address_line1': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_address_line2': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_city': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_province': forms.Select(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_postal_code': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+        }

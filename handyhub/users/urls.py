@@ -14,6 +14,11 @@ urlpatterns = [
     path("profile/<int:userid>" , views.profile , name = 'profile'),
     path("userservice/<int:userid>", views.add_user_services, name = 'userservice'),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
-     path( "services/delete/<int:service_id>/",views.delete_user_service, name="delete_user_service"),
-     path("about/", views.about, name="about"),
+    path( "services/delete/<int:service_id>/",views.delete_user_service, name="delete_user_service"),
+    path("about/", views.about, name="about"),
+    path("edit-profile-picture/", views.edit_profile_picture, name="edit_profile_picture" ),
+    path('edit-contact-address/', views.edit_contact_address, name='edit_contact_address'),
+    path('contactus/', views.edit_contact_address, name='contactus'),
+
+
 ]

@@ -69,34 +69,11 @@ def logmeout(request):
     return redirect("users:index")
 
 
-# @login_required
-# def add_user_services(request):
-#     categories = ServiceCategory.objects.prefetch_related("subcategories")
-
-#     if request.method == "POST":
-#         category_id = request.POST.get("category")
-#         selected_services = request.POST.getlist("services")
-
-#         category = ServiceCategory.objects.get(id=category_id)
-
-#         for sub_id in selected_services:
-#             UserService.objects.get_or_create(
-#                 user=request.user,
-#                 category=category,
-#                 subcategory_id=sub_id
-#             )
-
-#         return redirect("users:index")
-
-#     return render(request, "users/userservices.html", {
-#         "categories": categories
-#     })
-
-
-
+# this add services to a user
 @login_required
 def add_user_services(request, userid):
     user = get_object_or_404(User, id=userid)
+
     user_services = (
         UserService.objects
         .select_related("category", "subcategory")
@@ -109,7 +86,11 @@ def add_user_services(request, userid):
         category_id = request.POST.get("category")
         selected_services = request.POST.getlist("services")
 
-        category = ServiceCategory.objects.get(id=category_id)
+        # ✅ NOTHING SELECTED → just go back to profile
+        if not category_id or not selected_services:
+            return redirect("users:profile", request.user.id)
+
+        category = get_object_or_404(ServiceCategory, id=category_id)
 
         for sub_id in selected_services:
             UserService.objects.get_or_create(
@@ -118,19 +99,15 @@ def add_user_services(request, userid):
                 subcategory_id=sub_id
             )
 
-        return redirect("users:index")
-    else:
-        form = UserServiceForm()
+        return redirect("users:profile", request.user.id)
 
     context = {
-        "form": form,
         "user_obj": user,
         "user_services": user_services,
         "categories": categories
     }
 
     return render(request, "users/userservices.html", context)
-
 
 @login_required
 def edit_profile(request):
@@ -168,3 +145,54 @@ def delete_user_service(request, service_id):
 
     # Optional: if you want a confirmation page
     return render(request, "users/delete_user_service.html", {"service": service})
+
+
+@login_required
+def edit_profile_picture(request):
+    profile = request.user.profile
+
+    if request.method == "POST":
+        form = ProfilePictureForm(
+            request.POST,
+            request.FILES,
+            instance=profile
+        )
+        if form.is_valid():
+            form.save()
+            return redirect("users:profile" , request.user.id)
+        else:
+            messages.error(
+                request,
+                "There was an error updating your profile picture. Please try again."
+            )
+
+    else:
+        form = ProfilePictureForm(instance=profile)
+
+    return render( request,"users/edit_profile_picture.html",
+        {
+            "form": form,
+            "profile": profile
+        }
+    )
+
+
+@login_required
+def edit_contact_address(request):
+    profile = request.user.profile  # OneToOneField ensures this exists
+    form = EditContactAddressForm(request.POST, instance=profile)
+    if request.method == 'POST':
+        # form = EditContactAddressForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your contact and address information has been updated successfully!")
+            return redirect('users:edit_contact_address')
+        else:
+            messages.error(request, "Please fix the errors below.")
+
+        
+
+    return render(request, 'users/edit_contact_address.html', {'form': form})
+
+def edit_contact_address(request):
+    return render(request,"users/contactus.html")

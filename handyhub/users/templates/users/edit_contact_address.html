@@ -1,0 +1,104 @@
+{% extends "./base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block body %}
+<div class="max-w-3xl mx-auto p-6 bg-gray-100 rounded-lg shadow">
+    <h2 class="text-2xl font-bold text-green-700 mb-4">Edit Contact & Address</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-3 rounded {% if message.tags == 'success' %}bg-green-200 text-green-800{% else %}bg-red-200 text-red-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 gap-4">
+
+            <!-- Contact Information -->
+            <h3 class="text-lg font-semibold text-green-800 mt-2">Contact Information</h3>
+            
+            <div>
+                {{ form.user_primary_phone.label_tag }}
+                {% render_field form.user_primary_phone class="border rounded p-2 w-full" %}
+                {% if form.user_primary_phone.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_primary_phone.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {{ form.user_secondary_phone.label_tag }}
+                {% render_field form.user_secondary_phone class="border rounded p-2 w-full" %}
+                {% if form.user_secondary_phone.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_secondary_phone.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {{ form.user_business_phone.label_tag }}
+                {% render_field form.user_business_phone class="border rounded p-2 w-full" %}
+                {% if form.user_business_phone.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_business_phone.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {{ form.user_website.label_tag }}
+                {% render_field form.user_website class="border rounded p-2 w-full" %}
+                {% if form.user_website.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_website.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Address Information -->
+            <h3 class="text-lg font-semibold text-green-800 mt-4">Address Information</h3>
+            
+            <div>
+                {{ form.user_address_line1.label_tag }}
+                {% render_field form.user_address_line1 class="border rounded p-2 w-full" %}
+                {% if form.user_address_line1.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_address_line1.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {{ form.user_address_line2.label_tag }}
+                {% render_field form.user_address_line2 class="border rounded p-2 w-full" %}
+                {% if form.user_address_line2.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_address_line2.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {{ form.user_city.label_tag }}
+                {% render_field form.user_city class="border rounded p-2 w-full" %}
+                {% if form.user_city.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_city.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {{ form.user_province.label_tag }}
+                {% render_field form.user_province class="border rounded p-2 w-full" %}
+                {% if form.user_province.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_province.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {{ form.user_postal_code.label_tag }}
+                {% render_field form.user_postal_code class="border rounded p-2 w-full" %}
+                {% if form.user_postal_code.errors %}
+                    <p class="text-red-600 text-sm">{{ form.user_postal_code.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <button type="submit" class="mt-6 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">Update Information</button>
+    </form>
+</div>
+{% endblock %}
