@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse as hp
+from django.contrib.auth import authenticate, login
 from .forms import *
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -8,18 +9,24 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from services.models import SubCategory, ServiceCategory
 from .models import UserService, UserProfile
+from django.contrib.auth.views import LoginView
+from django.contrib.auth import authenticate
+from django.contrib.auth.forms import AuthenticationForm
 
 User = get_user_model()
 
+# home page
 def index(request):
     return render(request, "users/index.html")
 
+# about us
 def about(request):
     """
     Renders the About Us page for HandymenHub.
     """
     return render(request, "users/about.html")
 
+# register 
 def register(request):
     form = UserRegisterForm(request.POST or None)
 
@@ -38,6 +45,36 @@ def register(request):
     }
 
     return render(request, "users/register.html" , context)
+
+
+# custom login view
+def custom_login_view(request):
+    if request.method == "POST":
+        form = EmailLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data.get("username")  # email field in the form
+            password = form.cleaned_data.get("password")
+
+            # Look up user by email
+            try:
+                user_obj = User.objects.get(email=email)
+            except User.DoesNotExist:
+                messages.error(request, "User not found or profile does not exist.")
+                return render(request, "users/login.html", {"form": form})
+
+            # Authenticate using the username of that user
+            user = authenticate(username=user_obj.username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect("index")  # or your homepage
+            else:
+                messages.error(request, "Incorrect password.")
+        else:
+            messages.error(request, "Please enter a valid email and password.")
+    else:
+        form = EmailLoginForm()
+
+    return render(request, "users/login.html", {"form": form})
 
 @login_required
 def profile(request, userid):

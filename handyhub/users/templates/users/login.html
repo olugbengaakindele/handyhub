@@ -5,7 +5,7 @@
 
 {% block body %}
 <!-- Outer Container -->
- 
+    
   <div class="min-h-screen bg-gray-100 flex items-center justify-center px-6">
     <div class="w-full max-w-xl bg-white shadow-xl rounded-2xl p-10">
         
@@ -17,6 +17,13 @@
 
         <!-- Login Form -->
         <form method="POST" class="space-y-6">
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <p class="text-red-500 text-sm">{{ message }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
             {% csrf_token %}
 
             <!-- Email -->

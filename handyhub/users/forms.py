@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import UserProfile , UserService
 import re
-
+from django.contrib.auth.forms import AuthenticationForm
 
 User = get_user_model()
 
@@ -57,7 +57,21 @@ class UserRegisterForm(UserCreationForm):
 
         return pw2
 
-
+class EmailLoginForm(AuthenticationForm):
+    username = forms.EmailField(
+        label="Email",
+        widget=forms.EmailInput(attrs={
+            "class": "form-control w-full p-3 border border-gray-300 rounded-xl focus:ring focus:ring-teal-300",
+            "placeholder": "Enter your email"
+        })
+    )
+    password = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={
+            "class": "form-control w-full p-3 border border-gray-300 rounded-xl focus:ring focus:ring-teal-300",
+            "placeholder": "Enter your password"
+        })
+    )
 
 # This is to update user profile
 class UserProfileForm(forms.ModelForm):

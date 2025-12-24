@@ -13,8 +13,6 @@ def profile_image_path(instance, filename):
     return os.path.join('profile_pictures', filename)
 
 
-
-
 # Create your models here.
 class UserProfile(models.Model):
 
@@ -81,12 +79,6 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user_firstname})"
     
-class UserProvince(models.Model):
-    name = models.CharField(max_length=100)
-    code = models.CharField(max_length=10)  # e.g. AB, ON
-
-    def __str__(self):
-        return self.name
 
 class UserService(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name = "services")
@@ -100,3 +92,46 @@ class UserService(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.subcategory.name}"
+    
+
+
+#  this houses all the provicne in canada
+
+class Province(models.Model):
+    code = models.CharField(max_length=2, unique=True)  # AB, ON, BC
+    name = models.CharField(max_length=50)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+#  this stores cities in canada
+class City(models.Model):
+    province = models.ForeignKey(Province, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        unique_together = ("province", "name")
+
+    def __str__(self):
+        return f"{self.name}, {self.province.code}"
+    
+#  user service areas
+class ServiceArea(models.Model):
+    COVERAGE_CHOICES = (
+        ("province", "Entire Province"),
+        ("cities", "Selected Cities"),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    province = models.ForeignKey(Province, on_delete=models.CASCADE)
+    coverage_type = models.CharField(max_length=10, choices=COVERAGE_CHOICES)
+
+    cities = models.ManyToManyField(City, blank=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.province} ({self.coverage_type})"
+
