@@ -30,51 +30,23 @@ def about(request):
 def register(request):
     form = UserRegisterForm(request.POST or None)
 
-    if request.method == "POST" :
+    if request.method == "POST":
         if form.is_valid():
             form.save()
             messages.success(request, "Registration successful.")
             return redirect("users:index")
         else:
-            messages.error(request, "There were errors in your form. Please fix them.")
-            return redirect("users:register")
+            # Do NOT redirect; just render the same template with form errors
+            messages.error(request, "Please fix the errors below.")
 
- 
     context = {
         "form": form
     }
 
-    return render(request, "users/register.html" , context)
+    return render(request, "users/register.html", context)
 
 
-# custom login view
-def custom_login_view(request):
-    if request.method == "POST":
-        form = EmailLoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data.get("username")  # email field in the form
-            password = form.cleaned_data.get("password")
 
-            # Look up user by email
-            try:
-                user_obj = User.objects.get(email=email)
-            except User.DoesNotExist:
-                messages.error(request, "User not found or profile does not exist.")
-                return render(request, "users/login.html", {"form": form})
-
-            # Authenticate using the username of that user
-            user = authenticate(username=user_obj.username, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect("index")  # or your homepage
-            else:
-                messages.error(request, "Incorrect password.")
-        else:
-            messages.error(request, "Please enter a valid email and password.")
-    else:
-        form = EmailLoginForm()
-
-    return render(request, "users/login.html", {"form": form})
 
 @login_required
 def profile(request, userid):
