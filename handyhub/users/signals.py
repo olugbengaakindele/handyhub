@@ -13,6 +13,7 @@ def create_user_profile(sender, instance, created, **kwargs):
             user=instance,
             user_firstname=instance.first_name,
             user_last_name=instance.last_name,
-            user_preferred_name = instance.username
+            user_preferred_name = instance.username,
+            tier=UserProfile.TIER_FREE
         )
 

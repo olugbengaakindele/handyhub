@@ -121,15 +121,11 @@ class UserProfileForm(forms.ModelForm):
         }
 
 
-
 class UserServiceForm(forms.ModelForm):
 
     class Meta:
         model = UserService
-        fields = [
-            "category",
-            "subcategory",
-        ]
+        fields = ["category", "subcategory"]
 
         widgets = {
             "category": forms.Select(
@@ -152,18 +148,32 @@ class UserServiceForm(forms.ModelForm):
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
     def clean(self):
         cleaned_data = super().clean()
         category = cleaned_data.get("category")
         subcategory = cleaned_data.get("subcategory")
 
+        # ✅ Ensure subcategory belongs to category
         if category and subcategory:
-            if subcategory.category != category:
+            if subcategory.category_id != category.id:
                 raise forms.ValidationError(
                     "Selected subcategory does not belong to the selected category."
                 )
 
+        # ✅ Enforce max 5 services per user (only on create)
+        if self.user and not self.instance.pk:
+            if self.user.services.count() >= 5:
+                raise forms.ValidationError(
+                    "You can only add up to 5 services. "
+                    "This helps keep the platform fair for small tradespeople."
+                )
+
         return cleaned_data
+
     
 
 

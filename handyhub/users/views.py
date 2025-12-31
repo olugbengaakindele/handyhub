@@ -8,10 +8,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from services.models import SubCategory, ServiceCategory
-from .models import UserService, UserProfile
+from .models import *
 from django.contrib.auth.views import LoginView
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import AuthenticationForm
+
 
 User = get_user_model()
 
@@ -78,10 +79,14 @@ def logmeout(request):
     return redirect("users:index")
 
 
-# this add services to a user
+# this adds services to a user
 @login_required
 def add_user_services(request, userid):
-    user = get_object_or_404(User, id=userid)
+    # 🔐 Security: users can only edit their own services
+    if request.user.id != userid:
+        return redirect("users:profile", request.user.id)
+
+    user = request.user
 
     user_services = (
         UserService.objects
@@ -95,25 +100,47 @@ def add_user_services(request, userid):
         category_id = request.POST.get("category")
         selected_services = request.POST.getlist("services")
 
-        # ✅ NOTHING SELECTED → just go back to profile
         if not category_id or not selected_services:
-            return redirect("users:profile", request.user.id)
+            messages.error(request, "Please select a category and at least one service.")
+            return redirect("users:profile", user.id)
 
         category = get_object_or_404(ServiceCategory, id=category_id)
 
-        for sub_id in selected_services:
+        existing_count = user.services.count()
+        remaining_slots = 5 - existing_count
+
+        if remaining_slots <= 0:
+            messages.error(
+                request,
+                "You have already added the maximum of 5 services."
+            )
+            return redirect("users:profile", user.id)
+
+        # Only allow adding up to remaining slots
+        services_to_add = selected_services[:remaining_slots]
+
+        for sub_id in services_to_add:
             UserService.objects.get_or_create(
-                user=request.user,
+                user=user,
                 category=category,
                 subcategory_id=sub_id
             )
 
-        return redirect("users:profile", request.user.id)
+        if len(selected_services) > remaining_slots:
+            messages.warning(
+                request,
+                f"Only {remaining_slots} service(s) were added. "
+                "Free accounts can have a maximum of 5 services."
+            )
+
+        return redirect("users:profile", user.id)
 
     context = {
         "user_obj": user,
         "user_services": user_services,
-        "categories": categories
+        "categories": categories,
+        "max_services": 5,
+        "current_count": user.services.count(),
     }
 
     return render(request, "users/userservices.html", context)
@@ -198,10 +225,44 @@ def edit_contact_address(request):
             return redirect('users:edit_contact_address')
         else:
             messages.error(request, "Please fix the errors below.")
-
         
 
     return render(request, 'users/edit_contact_address.html', {'form': form})
 
-def edit_contact_address(request):
+
+def contactus(request):
     return render(request,"users/contactus.html")
+
+
+@login_required
+def edit_service_areas(request):
+    user = request.user
+
+    all_areas = ServiceArea.objects.filter(is_active=True)
+    selected_areas = UserServiceArea.objects.filter(
+        user=user
+    ).values_list("service_area_id", flat=True)
+
+    if request.method == "POST":
+        selected_ids = request.POST.getlist("service_areas")
+
+        UserServiceArea.objects.filter(user=user).exclude(
+            service_area_id__in=selected_ids
+        ).delete()
+
+        for area_id in selected_ids:
+            UserServiceArea.objects.get_or_create(
+                user=user,
+                service_area_id=area_id
+            )
+
+        return redirect("users:profile")
+
+    return render(
+        request,
+        "users/edit_service_areas.html",
+        {
+            "all_areas": all_areas,
+            "selected_areas": selected_areas,
+        }
+    )

@@ -45,6 +45,18 @@
               {% endif %}
             </a>
           </li>
+
+          <li>
+            <a href="{% url 'users:service_areas' user.id %}"
+              class="block hover:text-emerald-400 transition">
+              📍
+              {% if user_service_areas %}
+                Edit Service Areas
+              {% else %}
+                Add Service Areas
+              {% endif %}
+            </a>
+          </li>
         </ul>
       </aside>
 
