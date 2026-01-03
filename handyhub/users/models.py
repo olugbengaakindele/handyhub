@@ -16,7 +16,28 @@ def profile_image_path(instance, filename):
 
 # this creates a user profile 
 class UserProfile(models.Model):
+    profile_summary = models.TextField(
+        blank=True,
+        null=True,
+        max_length=1000,
+        help_text="Short bio about your business, experience, and what you specialize in."
+    )
 
+
+    TYPE_TRADESPERSON = "tradesperson"
+    TYPE_VISITOR = "visitor"
+
+    ACCOUNT_TYPE_CHOICES = [
+        (TYPE_TRADESPERSON, "Tradesperson"),
+        (TYPE_VISITOR, "Visitor"),
+    ]
+
+    account_type = models.CharField(
+        max_length=20,
+        choices=ACCOUNT_TYPE_CHOICES,
+        default=TYPE_TRADESPERSON,  # choose default you want
+        db_index=True,
+    )
     # 🔐 Subscription tiers
     TIER_FREE = "free"
     TIER_PRO = "pro"

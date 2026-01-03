@@ -7,56 +7,80 @@ from django.contrib.auth.forms import AuthenticationForm
 
 User = get_user_model()
 
+import re
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import get_user_model
+
+from .models import UserProfile
+
+User = get_user_model()
+
 
 class UserRegisterForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
+    account_type = forms.ChoiceField(
+        choices=UserProfile.ACCOUNT_TYPE_CHOICES,
+        initial=UserProfile.TYPE_TRADESPERSON,
+        widget=forms.RadioSelect,
+        required=True
+    )
+
     class Meta:
         model = User
-        fields = [
-            "username",
-            "email",
-            "password1",
-            "password2",
-        ]
+        fields = ["username", "email", "password1", "password2", "account_type"]
 
-        widgets = {
-            "username": forms.TextInput(attrs={"class": "form-control"}),
-            "email": forms.EmailInput(attrs={"class": "form-control"}),
-            "password1": forms.PasswordInput(attrs={"class": "form-control"}),
-            "password2": forms.PasswordInput(attrs={"class": "form-control"}),
-        }
-
-    # Validate unique email
     def clean_email(self):
         email = self.cleaned_data.get("email")
-        if User.objects.filter(email=email).exists():
+        if email and User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("A user with this email already exists.")
         return email
 
-    # THE CORRECT PLACE FOR PASSWORD VALIDATION
     def clean_password2(self):
         pw1 = self.cleaned_data.get("password1")
         pw2 = self.cleaned_data.get("password2")
 
-        # First ensure Django still checks matching
         if pw1 and pw2 and pw1 != pw2:
             raise forms.ValidationError("Passwords do not match.")
-
-        # Length rule
-        if len(pw1) < 8:
+        if pw1 and len(pw1) < 8:
             raise forms.ValidationError("Password must be at least 8 characters long.")
-
-        # At least 1 letter
-        if not re.search(r"[A-Za-z]", pw1):
+        if pw1 and not re.search(r"[A-Za-z]", pw1):
             raise forms.ValidationError("Password must contain at least one letter.")
-
-        # At least 1 number
-        if not re.search(r"[0-9]", pw1):
+        if pw1 and not re.search(r"[0-9]", pw1):
             raise forms.ValidationError("Password must contain at least one number.")
 
         return pw2
 
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+
+        account_type = self.cleaned_data.get("account_type", UserProfile.TYPE_TRADESPERSON)
+
+        # ✅ profile exists because of signal, but keep get_or_create as safety
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.account_type = account_type
+        profile.save()
+
+        return user
+
+
+    def save(self, commit=True):
+        """
+        Save user, then set account_type on the user's profile.
+        """
+        user = super().save(commit=commit)
+
+        account_type = self.cleaned_data.get("account_type", UserProfile.TYPE_TRADESPERSON)
+
+        # ✅ Ensure profile exists (in case signals didn't create it)
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.account_type = account_type
+        profile.save()
+
+        return user
+
+# login form
 class EmailLoginForm(AuthenticationForm):
     username = forms.EmailField(
         label="Email",
@@ -177,8 +201,11 @@ class UserServiceForm(forms.ModelForm):
     
 
 
-
+#  editi profile form
 class EditProfileForm(forms.ModelForm):
+
+    MAX_SUMMARY_LENGTH = 1000
+
     class Meta:
         model = UserProfile
         fields = [
@@ -186,21 +213,25 @@ class EditProfileForm(forms.ModelForm):
             "user_last_name",
             "user_preferred_name",
             "user_business_name",
+            "profile_summary",
         ]
+
         widgets = {
-            "user_firstname": forms.TextInput(attrs={
-                "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
-            }),
-            "user_last_name": forms.TextInput(attrs={
-                "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
-            }),
-            "user_preferred_name": forms.TextInput(attrs={
-                "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
-            }),
-            "user_business_name": forms.TextInput(attrs={
-                "class": "w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-500"
+            "profile_summary": forms.Textarea(attrs={
+                "rows": 5,
             }),
         }
+
+    def clean_profile_summary(self):
+        summary = self.cleaned_data.get("profile_summary", "")
+
+        if summary and len(summary) > self.MAX_SUMMARY_LENGTH:
+            raise forms.ValidationError(
+                f"Profile summary cannot exceed {self.MAX_SUMMARY_LENGTH} characters."
+            )
+
+        return summary
+
 
 
 class ProfilePictureForm(forms.ModelForm):
@@ -218,7 +249,7 @@ class ProfilePictureForm(forms.ModelForm):
         }
 
 
-class EditContactAddressForm(forms.ModelForm):
+class EditContactForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = [
@@ -226,6 +257,33 @@ class EditContactAddressForm(forms.ModelForm):
             'user_secondary_phone',
             'user_business_phone',
             'user_website',
+            
+        ]
+        widgets = {
+            'user_primary_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_secondary_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_business_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
+            'user_website': forms.URLInput(attrs={'class': 'border rounded p-2 w-full'}),
+            
+        }
+    
+    def clean_user_website(self):
+        website = self.cleaned_data.get("user_website")
+
+        if website:
+            website = website.strip()
+
+            # Auto-add scheme if missing
+            if not website.startswith(("http://", "https://")):
+                website = "https://" + website
+
+        return website
+
+
+class EditAddressForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = [
             'user_address_line1',
             'user_address_line2',
             'user_city',
@@ -233,10 +291,6 @@ class EditContactAddressForm(forms.ModelForm):
             'user_postal_code'
         ]
         widgets = {
-            'user_primary_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
-            'user_secondary_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
-            'user_business_phone': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
-            'user_website': forms.URLInput(attrs={'class': 'border rounded p-2 w-full'}),
             'user_address_line1': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
             'user_address_line2': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),
             'user_city': forms.TextInput(attrs={'class': 'border rounded p-2 w-full'}),

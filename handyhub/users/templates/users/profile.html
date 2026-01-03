@@ -30,9 +30,15 @@
             </a>
           </li>
           <li>
-            <a href="{% url 'users:edit_contact_address'  %}"
+            <a href="{% url 'users:edit_address_info'  %}"
                class="block hover:text-emerald-400 transition">
-              📍 Edit Contact
+              📍 Edit Address Info
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'users:edit_contact_info'  %}"
+               class="block hover:text-emerald-400 transition">
+              📍 Edit Contact Info
             </a>
           </li>
           <li>
@@ -47,7 +53,7 @@
           </li>
 
           <li>
-            <a href="{% url 'users:service_areas' user.id %}"
+            <a href="{% url 'users:edit_service_areas' %}"
               class="block hover:text-emerald-400 transition">
               📍
               {% if user_service_areas %}
@@ -92,7 +98,7 @@
               {% endif %}
 
               {% if profile.user_website %}
-                <a href=""
+                <a href="{{ profile.user_website }}"
                    target="_blank"
                    class="text-emerald-600 text-sm hover:underline">
                   {{ profile.user_website }}
@@ -102,20 +108,106 @@
           </div>
         </section>
 
-        <!-- ADDRESS CARD -->
+        <!-- ✅ ABOUT / PROFILE SUMMARY (BEST POSITION: right after profile card) -->
+        <section class="bg-white rounded-xl shadow p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-slate-800">
+              About me
+            </h3>
+          </div>
+
+          {% if profile.profile_summary %}
+            <p class="text-slate-700 leading-relaxed whitespace-pre-line">
+              {{ profile.profile_summary }}
+            </p>
+          {% else %}
+            <div class="rounded-xl bg-slate-50 border border-slate-200 p-4">
+              <p class="text-slate-600 text-sm">
+                No profile summary added yet. Add a short description of your experience, specialties, and what customers can expect.
+              </p>
+            </div>
+          {% endif %}
+        </section>
+
+        <!-- ADDRESS & CONTACT CARD -->
         <section class="bg-white rounded-xl shadow p-6">
           <h3 class="text-lg font-semibold text-slate-800 mb-4">
-            Address
+            Address & Contact Information
           </h3>
 
-          <p class="text-slate-700">
-            {{ profile.user_address_line1 }}<br>
-            {% if profile.user_address_line2 %}
-              {{ profile.user_address_line2 }}<br>
-            {% endif %}
-            {{ profile.user_city }}, {{ profile.user_province }}<br>
-            {{ profile.user_postal_code }}
-          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 text-slate-700">
+
+            <!-- Address -->
+            <div>
+              <h4 class="text-sm font-semibold text-slate-600 mb-1">📍 Address</h4>
+              <p>
+                {{ profile.user_address_line1 }}<br>
+                {% if profile.user_address_line2 %}
+                  {{ profile.user_address_line2 }}<br>
+                {% endif %}
+                {{ profile.user_city }}, {{ profile.user_province }}<br>
+                {{ profile.user_postal_code }}
+              </p>
+            </div>
+
+            <!-- Contact Info -->
+            <div>
+              <h4 class="text-sm font-semibold text-slate-600 mb-1">📞 Contact</h4>
+
+              {% if profile.user_primary_phone %}
+                <p><span class="font-medium">Primary:</span> {{ profile.user_primary_phone }}</p>
+              {% endif %}
+
+              {% if profile.user_secondary_phone %}
+                <p><span class="font-medium">Secondary:</span> {{ profile.user_secondary_phone }}</p>
+              {% endif %}
+
+              {% if profile.user_business_phone %}
+                <p><span class="font-medium">Business:</span> {{ profile.user_business_phone }}</p>
+              {% endif %}
+
+              {% if not profile.user_primary_phone and not profile.user_secondary_phone and not profile.user_business_phone %}
+                <p class="text-slate-500 text-sm">
+                  No contact numbers added yet.
+                </p>
+              {% endif %}
+            </div>
+
+          </div>
+
+          <!-- Website -->
+          {% if profile.user_website %}
+            <div class="mt-4 pt-4 border-t border-slate-100">
+              <h4 class="text-sm font-semibold text-slate-600 mb-1">🌐 Website</h4>
+              <a href="{{ profile.user_website }}"
+                 target="_blank"
+                 class="text-emerald-600 text-sm hover:underline break-all">
+                {{ profile.user_website }}
+              </a>
+            </div>
+          {% endif %}
+        </section>
+
+        <!-- SERVICE AREAS CARD -->
+        <section class="bg-white rounded-xl shadow p-6">
+          <h3 class="text-lg font-semibold text-slate-800 mb-4">
+            Service Areas
+          </h3>
+
+          {% if user_service_areas %}
+            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {% for area in user_service_areas %}
+                <li class="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm text-slate-700">
+                  📍 <span class="font-semibold">{{ area.name }}</span>
+                  <span class="text-slate-500">({{ area.city }}, {{ area.province }})</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-slate-500">
+              No service areas added yet.
+            </p>
+          {% endif %}
         </section>
 
         <!-- SERVICES OFFERED -->

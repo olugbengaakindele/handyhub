@@ -12,6 +12,9 @@ from .models import *
 from django.contrib.auth.views import LoginView
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import AuthenticationForm
+from .utils import get_service_area_limit
+from django.db import transaction
+
 
 
 User = get_user_model()
@@ -33,44 +36,45 @@ def register(request):
 
     if request.method == "POST":
         if form.is_valid():
-            form.save()
-            messages.success(request, "Registration successful.")
-            return redirect("users:index")
-        else:
-            # Do NOT redirect; just render the same template with form errors
-            messages.error(request, "Please fix the errors below.")
+            user = form.save()
 
-    context = {
-        "form": form
-    }
+            # Optional: log user in immediately
+            login(request, user)
 
-    return render(request, "users/register.html", context)
+            # Optional: redirect based on account type
+            account_type = user.profile.account_type
+            if account_type == "tradesperson":
+                return redirect("users:profile")  # private dashboard
+            else:
+                return redirect("users:index")  # or "find service" page
 
+        messages.error(request, "Please fix the errors below.")
+
+    return render(request, "users/register.html", {"form": form})
 
 
 
 @login_required
-def profile(request, userid):
-
-    user = get_object_or_404(User, id=userid)
-    # Get user profile (OneToOne)
+def profile(request):
+    user = request.user
     profile = getattr(user, "profile", None)
-
-    # Get services rendered by the user
     user_services = (
         UserService.objects
         .select_related("category", "subcategory")
         .filter(user=user)
     )
 
+    user_service_areas = ServiceArea.objects.filter(userservicearea__user=user)
+
     context = {
-        "user_obj": user,          # optional, but useful
+        "user_obj": user,
         "profile": profile,
         "user_services": user_services,
         "user_has_services": user_services.exists(),
+        "user_service_areas": user_service_areas,
     }
-
     return render(request, "users/profile.html", context)
+
 
 @login_required
 def logmeout(request):
@@ -81,11 +85,10 @@ def logmeout(request):
 
 # this adds services to a user
 @login_required
-def add_user_services(request, userid):
+def add_user_services(request):
     # 🔐 Security: users can only edit their own services
-    if request.user.id != userid:
-        return redirect("users:profile", request.user.id)
-
+    # if request.user.id != userid:
+    #     return redirect("users:profile", request.user.id)
     user = request.user
 
     user_services = (
@@ -153,7 +156,7 @@ def edit_profile(request):
         form = EditProfileForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
-            return redirect("users:profile", request.user.id)
+            return redirect("users:profile")
     else:
         form = EditProfileForm(instance=profile)
 
@@ -172,12 +175,12 @@ def delete_user_service(request, service_id):
     except UserService.DoesNotExist:
         messages.error(request, "You do not have permission to delete this service.")
         # Redirect safely to their service list
-        return redirect("users:userservice", userid=request.user.id)
+        return redirect("users:userservice")
 
     if request.method == "POST":
         service.delete()
         messages.success(request, "Service removed successfully.")
-        return redirect("users:userservice", userid=request.user.id)
+        return redirect("users:userservice")
 
     # Optional: if you want a confirmation page
     return render(request, "users/delete_user_service.html", {"service": service})
@@ -195,7 +198,7 @@ def edit_profile_picture(request):
         )
         if form.is_valid():
             form.save()
-            return redirect("users:profile" , request.user.id)
+            return redirect("users:profile" )
         else:
             messages.error(
                 request,
@@ -212,57 +215,124 @@ def edit_profile_picture(request):
         }
     )
 
+# this edits the contact information
+@login_required
+def edit_contact_info(request):
+    profile = request.user.profile  # existing DB record
+
+    if request.method == "POST":
+        form = EditContactForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Contact information updated successfully.")
+            return redirect("users:profile")
+        else:
+            messages.error(request, "Please fix the errors below.")
+    else:
+        # ✅ THIS is what prefills the form
+        form = EditContactForm(instance=profile)
+
+    return render(
+        request,
+        "users/edit_contact_info.html",
+        {"form": form},
+    )
+        
+
+    return render(request, 'users/edit_contact_info.html', {'form': form})
 
 @login_required
-def edit_contact_address(request):
+def edit_address_info(request):
     profile = request.user.profile  # OneToOneField ensures this exists
-    form = EditContactAddressForm(request.POST, instance=profile)
+    
     if request.method == 'POST':
+        form = EditAddressForm(request.POST, instance=profile)
         # form = EditContactAddressForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
-            messages.success(request, "Your contact and address information has been updated successfully!")
-            return redirect('users:edit_contact_address')
+            messages.success(request, "Your address information has been updated successfully!")
+            return redirect('users:profile')
         else:
             messages.error(request, "Please fix the errors below.")
-        
+    else :
+        form = EditAddressForm( instance=profile)  
 
-    return render(request, 'users/edit_contact_address.html', {'form': form})
+    return render(request, 'users/edit_address_info.html', {'form': form})
+
 
 
 def contactus(request):
     return render(request,"users/contactus.html")
 
 
+
 @login_required
 def edit_service_areas(request):
     user = request.user
+    service_area_limit = get_service_area_limit(user)
 
-    all_areas = ServiceArea.objects.filter(is_active=True)
-    selected_areas = UserServiceArea.objects.filter(
-        user=user
-    ).values_list("service_area_id", flat=True)
+    # All possible areas (for checkbox selection)
+    all_areas = ServiceArea.objects.filter(is_active=True).order_by("metro_city", "city", "name")
+
+    # User's currently selected areas (via reverse relation name in error choices: userservicearea)
+    selected_area_objects = ServiceArea.objects.filter(userservicearea__user=user).order_by("metro_city", "city", "name")
+    selected_ids_current = set(selected_area_objects.values_list("id", flat=True))
 
     if request.method == "POST":
-        selected_ids = request.POST.getlist("service_areas")
+        selected_ids_post = request.POST.getlist("service_areas")
+        selected_ids_post = [int(x) for x in selected_ids_post if x.isdigit()]
 
-        UserServiceArea.objects.filter(user=user).exclude(
-            service_area_id__in=selected_ids
-        ).delete()
-
-        for area_id in selected_ids:
-            UserServiceArea.objects.get_or_create(
-                user=user,
-                service_area_id=area_id
+        # ✅ Enforce free tier max
+        if len(selected_ids_post) > service_area_limit:
+            messages.error(
+                request,
+                f"Free tier users can only select up to {service_area_limit} service areas."
+            )
+            # Re-render page with current context (don’t save)
+            return render(
+                request,
+                "users/edit_service_areas.html",
+                {
+                    "all_areas": all_areas,
+                    "selected_areas": selected_ids_post,  # show what they tried
+                    "selected_area_objects": selected_area_objects,
+                    "service_area_limit": service_area_limit,
+                },
             )
 
-        return redirect("users:profile")
+        # Save selections: wipe and recreate links
+        with transaction.atomic():
+            UserServiceArea.objects.filter(user=user).delete()
 
-    return render(
-        request,
-        "users/edit_service_areas.html",
-        {
-            "all_areas": all_areas,
-            "selected_areas": selected_areas,
-        }
-    )
+            links = [
+                UserServiceArea(user=user, service_area_id=area_id, is_active=True)
+                for area_id in selected_ids_post
+            ]
+            UserServiceArea.objects.bulk_create(links)
+
+        messages.success(request, "Your service areas have been updated.")
+        return redirect("users:edit_service_areas")
+
+    # GET context
+    context = {
+        "all_areas": all_areas,
+        "selected_areas": list(selected_ids_current),        # for checkbox checked state
+        "selected_area_objects": selected_area_objects,      # for list below
+        "service_area_limit": service_area_limit,
+    }
+    return render(request, "users/edit_service_areas.html", context)
+
+
+@login_required
+def delete_service_area_confirm(request, area_id):
+    """
+    Confirm + remove a service area from THIS user only.
+    """
+    link = get_object_or_404(UserServiceArea, user=request.user, service_area_id=area_id)
+
+    if request.method == "POST":
+        link.delete()
+        messages.success(request, "Service area removed.")
+        return redirect("users:edit_service_areas")
+
+    return render(request, "users/confirm_delete_service_area.html", {"area": link})
